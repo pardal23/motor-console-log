@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Console Log Direto no Ecrã</title>
+    <style>
+        /* Estilo para parecer um console real de programador */
+        #meu-console-virtual {
+            background-color: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 15px;
+            border-radius: 8px;
+            min-height: 200px;
+            white-space: pre-wrap; /* Mantém as quebras de linha */
+            box-shadow: inset 0 0 10px #000;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Resultados do Console diretamente na Página:</h1>
+    
+    <!-- É aqui que as tuas mensagens vão aparecer -->
+    <div id="meu-console-virtual"></div>
+
+    <script>
+        // TRUQUE: Redirecionar o console.log para o HTML automaticamente
+        const divConsole = document.getElementById('meu-console-virtual');
+        
+        console.log = function(mensagem) {
+            // Escreve no HTML dentro da nossa caixinha preta
+            divConsole.innerHTML += "> " + mensagem + "\n";
+        };
+    </script>
+
+    <script>
+        // --- COLOCA O TEU CÓDIGO DAQUI PARA BAIXO ---
+        
+        console.log("Olá, mundo!");
+        console.log("Isto está a aparecer direto no HTML sem carregar no F12!");
+        console.log(`<h1 style="color:red;">Karma! O espirito alma na lei causa efeito</h1>\n<img src="https://i.pinimg.com/originals/b1/f1/dc/b1f1dc2eb39105130fb7f9eb6b3f4202.jpg" width="300">\n<iframe width="839" height="472" src="https://www.youtube.com/embed/92cwKCU8Z5c?list=RD92cwKCU8Z5c" title="ABBA - The Winner Takes It All" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`);
+        const soma = 10 + 20;
+        console.log("O resultado da soma é: " + soma);
+        
+        console.log("Podes testar mais linhas à vontade.");
+    </script>
+
+</body>
+</html>

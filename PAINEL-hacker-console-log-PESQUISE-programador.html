@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Console Log Direto no Ecrã</title>
+    <style>
+        /* Estilo para parecer um console real de programador */
+        #meu-console-virtual {
+            background-color: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 15px;
+            border-radius: 8px;
+            min-height: 200px;
+            white-space: pre-wrap; /* Mantém as quebras de linha */
+            box-shadow: inset 0 0 10px #000;
+            margin-bottom: 15px;
+        }
+
+        /* Estilo do novo input de pesquisa avançada */
+        .campo-pesquisa-container {
+            display: flex;
+            gap: 10px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        #input-pesquisa-direta {
+            flex: 1;
+            background-color: #1e1e1e;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 5px;
+            outline: none;
+            font-size: 14px;
+        }
+        /* Estilo do Menu Dropdown dos Navegadores/Motores */
+        #menu-navegador {
+            background-color: #1e1e1e;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 5px;
+            outline: none;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        #btn-pesquisa-direta {
+            background-color: #00ff00;
+            color: #1e1e1e;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        #btn-pesquisa-direta:hover {
+            background-color: #00cc00;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Resultados do Console diretamente na Página:</h1>
+    
+    <!-- É aqui que as tuas mensagens vão aparecer -->
+    <div id="meu-console-virtual"></div>
+
+    <!-- Novo input original + Menu de 3 Navegadores para Pesquisa Direta -->
+    <div class="campo-pesquisa-container">
+        <select id="menu-navegador">
+            <option value="google_pai">Google (Link Pai)</option>
+            <option value="duck_filho">DuckDuckGo (Link Filho)</option>
+            <option value="yandex_diretorios">Yandex (Diretórios)</option>
+        </select>
+        <input type="text" id="input-pesquisa-direta" placeholder="Insira o domínio alvo (ex: duma.ru)...">
+        <button id="btn-pesquisa-direta">PESQUISAR</button>
+    </div>
+ <script>
+        // TRUQUE: Redirecionar o console.log para o HTML automaticamente
+        const divConsole = document.getElementById('meu-console-virtual');
+        
+        console.log = function(mensagem) {
+            // Escreve no HTML dentro da nossa caixinha preta
+            divConsole.innerHTML += "> " + mensagem + "\n";
+
+            // INOVAÇÃO: Deteta o comando via console.log e divide pelas regras do Menu Selecionado
+            if (typeof mensagem === 'string' && mensagem.startsWith("PESQUISA_DIRETA:")) {
+                // Formato esperado da string capturada: "PESQUISA_DIRETA:motor|dominio"
+                let dadosCampos = mensagem.replace("PESQUISA_DIRETA:", "").trim().split('|');
+                let motorSelecionado = dadosCampos[0];
+                let domAlvo = dadosCampos[1];
+                
+                if (domAlvo) {
+                    /* 
+                       LIMPEZA AVANÇADA: Garante apenas a KEY pura do domínio pai.
+                    */
+                    domAlvo = domAlvo.replace(/^https?:\/\//i, '') 
+                                     .split('/')[0]                
+                                     .replace(/[^a-zA-Z0-9.-]/g, ''); 
+
+                    let urlFinal = "";
+
+                    if (motorSelecionado === "google_pai") {
+                        // 1. Google Link Pai: Injeta o endpoint /search?q= correto para o Google processar
+                        let dorkPai = encodeURIComponent(`site:*.${domAlvo} -www.${domAlvo}`);
+                        urlFinal = `https://google.com`;
+                        divConsole.innerHTML += `[SISTEMA] Mapeando Link Pai no Google para: ${domAlvo}\n`;
+                    } 
+                    else if (motorSelecionado === "duck_filho") {
+                        // 2. DuckDuckGo Link Filho: Injeta o endpoint /html/?q= para carregar a versão limpa do motor
+                        let dorkDDG = encodeURIComponent(`site:${domAlvo} filetype:sql | filetype:db | filetype:bkp`);
+                        urlFinal = `https://duckduckgo.com`;
+                        divConsole.innerHTML += `[SISTEMA] Mapeando Link Filho no DuckDuckGo para: ${domAlvo}\n`;
+                    } 
+                    else if (motorSelecionado === "yandex_diretorios") {
+                        // 3. Yandex Diretórios: Injeta o endpoint /search/?text= correto para o Yandex processar
+                        let dorkDiretorios = encodeURIComponent(`site:${domAlvo} inurl:admin | inurl:login | inurl:api | filetype:log | filetype:env`);
+                        urlFinal = `https://yandex.com`;
+                        divConsole.innerHTML += `[SISTEMA] Mapeando Diretórios no Yandex para: ${domAlvo}\n`;
+                    }
+
+                    if (urlFinal) {
+                        window.open(urlFinal, '_blank');
+                    }
+                }
+            }
+        };
+    </script>
+
+    <script>
+        // --- COLOCA O TEU CÓDIGO DAQUI PARA BAIXO ---
+        
+        console.log("Olá, mundo!");
+        console.log("Isto está a aparecer direto no HTML sem carregar no F12!");
+        console.log(`<h1 style="color:red;">Karma! O espírito alma na lei causa efeito</h1>\n<img src="https://media1.tenor.com/m/DUnSR6i8C7QAAAAC/blue-touch.gif" width="300">\n<iframe width="839" height="472" src="https://www.youtube.com/embed/92cwKCU8Z5c?list=RD92cwKCU8Z5c" title="ABBA - The Winner Takes It All" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`);
+        const soma = 10 + 20;
+        console.log("O resultado da soma é: " + soma);
+        
+        console.log("Podes testar mais linhas à vontade.");
+        console.log("Roubar_dados");
+
+        // Lógica que dá força à pesquisa passando o motor + o valor pelo console.log
+        const inputPesquisa = document.getElementById('input-pesquisa-direta');
+        const menuNavegador = document.getElementById('menu-navegador');
+        const btnPesquisa = document.getElementById('btn-pesquisa-direta');
+
+        function executarAcao() {
+            const valor = inputPesquisa.value.trim();
+            const motor = menuNavegador.value;
+            if (valor) {
+                // Concatena o motor e o valor usando uma barra vertical '|' para o console.log intercetar e processar
+                console.log("PESQUISA_DIRETA:" + motor + "|" + valor);
+                inputPesquisa.value = "";
+            }
+        }
+
+        // Eventos para disparar quando clicas no botão ou carregas no Enter
+        btnPesquisa.addEventListener('click', executarAcao);
+        inputPesquisa.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                executarAcao();
+            }
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Console Log Direto no Ecrã</title>
+    <style>
+        /* Estilo para parecer um console real de programador */
+        #meu-console-virtual {
+            background-color: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 15px;
+            border-radius: 8px;
+            min-height: 200px;
+            white-space: pre-wrap; /* Mantém as quebras de linha */
+            box-shadow: inset 0 0 10px #000;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Resultados do Console diretamente na Página:</h1>
+    
+    <!-- É aqui que as tuas mensagens vão aparecer -->
+    <div id="meu-console-virtual"></div>
+
+    <script>
+        // TRUQUE: Redirecionar o console.log para o HTML automaticamente
+        const divConsole = document.getElementById('meu-console-virtual');
+        
+        console.log = function(mensagem) {
+            // Escreve no HTML dentro da nossa caixinha preta
+            divConsole.innerHTML += "> " + mensagem + "\n";
+        };
+    </script>
+
+    <script>
+        // --- COLOCA O TEU CÓDIGO DAQUI PARA BAIXO ---
+        
+        console.log("Olá, mundo!");
+        console.log("Isto está a aparecer direto no HTML sem carregar no F12!");
+        console.log(`<h1 style="color:red;">Karma! O espirito alma na lei causa efeito</h1>\n<img src="https://i.pinimg.com/originals/b1/f1/dc/b1f1dc2eb39105130fb7f9eb6b3f4202.jpg" width="300">\n<iframe width="839" height="472" src="https://www.youtube.com/embed/92cwKCU8Z5c?list=RD92cwKCU8Z5c" title="ABBA - The Winner Takes It All" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`);
+        const soma = 10 + 20;
+        console.log("O resultado da soma é: " + soma);
+        
+        console.log("Podes testar mais linhas à vontade.");
+console.log("Roubar_dados");
+    </script>
+<p><a href="https://chatgpt.com/pt-PT/features/deep-research/pesquisaProfunda">CHAT gtp pesquisas profundas hacker</a></p>
+
+<!-- ========================================================= -->
+<!-- JANELA GUI ACRESCENTADA SEM ALTERAR O CÓDIGO ANTERIOR     -->
+<!-- ========================================================= -->
+
+<style>
+    #gui-link-window {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 500px;
+        max-width: 90%;
+        background: #181818;
+        color: white;
+        border: 2px solid #00ff00;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+        z-index: 99999;
+        font-family: Arial, sans-serif;
+        display: none;
+    }
+
+    #gui-link-window h2 {
+        margin-top: 0;
+        color: #00ff00;
+    }
+
+    #gui-link-url {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        margin: 10px 0 15px;
+        background: #252525;
+        color: #00ff00;
+        border: 1px solid #555;
+        border-radius: 5px;
+    }
+
+    #gui-link-window button {
+        padding: 10px 18px;
+        margin-right: 8px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    #gui-abrir-link {
+        background: #00cc44;
+        color: white;
+    }
+
+    #gui-fechar-link {
+        background: #444;
+        color: white;
+    }
+
+    #gui-link-background {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        z-index: 99998;
+        display: none;
+    }
+
+    #gui-abrir-janela {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        background: #00cc44;
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 14px 22px;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 5px 20px rgba(0,0,0,.4);
+        z-index: 9999;
+    }
+</style>
+
+<div id="gui-link-background"></div>
+
+<div id="gui-link-window">
+    <h2>🌐 Abrir ligação</h2>
+
+    <div>Link encontrado na tag &lt;p&gt;:</div>
+
+    <input id="gui-link-url" type="text" readonly>
+
+    <button id="gui-abrir-link">Abrir link</button>
+    <button id="gui-fechar-link">Fechar</button>
+</div>
+
+<button id="gui-abrir-janela">🔗 Abrir GUI</button>
+
+<script>
+(function() {
+
+    // Procura automaticamente o link que está dentro da tag <p>
+    const linkOriginal = document.querySelector("p a");
+
+    if (!linkOriginal) {
+        console.warn("Nenhum link encontrado dentro de uma tag <p>.");
+        return;
+    }
+
+    const url = linkOriginal.href;
+
+    const janela = document.getElementById("gui-link-window");
+    const fundo = document.getElementById("gui-link-background");
+    const campoUrl = document.getElementById("gui-link-url");
+
+    const botaoAbrir = document.getElementById("gui-abrir-link");
+    const botaoFechar = document.getElementById("gui-fechar-link");
+    const botaoGUI = document.getElementById("gui-abrir-janela");
+
+    campoUrl.value = url;
+
+    function abrirGUI() {
+        janela.style.display = "block";
+        fundo.style.display = "block";
+    }
+
+    function fecharGUI() {
+        janela.style.display = "none";
+        fundo.style.display = "none";
+    }
+
+    botaoGUI.addEventListener("click", abrirGUI);
+
+    botaoFechar.addEventListener("click", fecharGUI);
+
+    fundo.addEventListener("click", fecharGUI);
+
+    botaoAbrir.addEventListener("click", function() {
+        window.open(
+            url,
+            "_blank",
+            "noopener,noreferrer"
+        );
+    });
+
+})();
+</script>
+
+</body>
+</html>

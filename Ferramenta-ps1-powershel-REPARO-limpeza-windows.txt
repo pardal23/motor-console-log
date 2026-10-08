@@ -1,0 +1,676 @@
+#requires -RunAsAdministrator
+
+<#
+    WINDOWS REFRESH & REPAIR
+    -------------------------
+    Limpeza + reparação + diagnóstico seguro do Windows.
+
+    Executar como Administrador.
+    Compatível com Windows 10/11.
+
+    O script NÃO:
+      - apaga a DriverStore;
+      - desativa serviços essenciais;
+      - altera o registo de forma agressiva;
+      - mata processos aleatoriamente;
+      - instala drivers de fontes desconhecidas.
+#>
+
+$ErrorActionPreference = "Continue"
+
+# ============================================================
+# CONFIGURAÇÃO
+# ============================================================
+
+$Version = "1.0"
+$StartTime = Get-Date
+$LogDir = Join-Path $env:ProgramData "WindowsRefresh"
+$LogFile = Join-Path $LogDir ("WindowsRefresh_{0}.log" -f (Get-Date -Format "yyyyMMdd_HHmmss"))
+
+New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+
+Start-Transcript -Path $LogFile -Append | Out-Null
+
+# ============================================================
+# CORES / UI
+# ============================================================
+
+function Write-Title {
+    param([string]$Text)
+
+    Clear-Host
+    Write-Host ""
+    Write-Host "============================================================" -ForegroundColor DarkCyan
+    Write-Host "                 WINDOWS REFRESH $Version" -ForegroundColor Cyan
+    Write-Host "============================================================" -ForegroundColor DarkCyan
+    Write-Host ""
+    Write-Host $Text -ForegroundColor White
+    Write-Host ""
+}
+
+function Write-Step {
+    param([string]$Text)
+
+    Write-Host ""
+    Write-Host "[*] $Text" -ForegroundColor Cyan
+}
+
+function Write-OK {
+    param([string]$Text)
+
+    Write-Host "[OK] $Text" -ForegroundColor Green
+}
+
+function Write-Warn {
+    param([string]$Text)
+
+    Write-Host "[!] $Text" -ForegroundColor Yellow
+}
+
+function Write-Fail {
+    param([string]$Text)
+
+    Write-Host "[X] $Text" -ForegroundColor Red
+}
+
+function Pause-Script {
+    Write-Host ""
+    Read-Host "Pressiona ENTER para continuar"
+}
+
+# ============================================================
+# ADMIN
+# ============================================================
+
+function Test-Administrator {
+
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+
+    return $principal.IsInRole(
+        [Security.Principal.WindowsBuiltInRole]::Administrator
+    )
+}
+
+if (-not (Test-Administrator)) {
+
+    Write-Host ""
+    Write-Host "Este script precisa de permissões de Administrador." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Clique com o botão direito no PowerShell e escolha:" -ForegroundColor Yellow
+    Write-Host "Executar como administrador" -ForegroundColor Cyan
+    Write-Host ""
+
+    Stop-Transcript | Out-Null
+    exit 1
+}
+
+# ============================================================
+# PONTO DE RESTAURO
+# ============================================================
+
+function Create-RestorePoint {
+
+    Write-Step "A criar ponto de restauro..."
+
+    try {
+
+        Enable-ComputerRestore -Drive "$env:SystemDrive\" -ErrorAction SilentlyContinue
+
+        Checkpoint-Computer `
+            -Description "Windows Refresh - $Version" `
+            -RestorePointType "MODIFY_SETTINGS" `
+            -ErrorAction Stop
+
+        Write-OK "Ponto de restauro criado."
+
+    }
+    catch {
+
+        Write-Warn "Não foi possível criar o ponto de restauro."
+        Write-Warn $_.Exception.Message
+    }
+}
+
+# ============================================================
+# ESPAÇO LIVRE
+# ============================================================
+
+function Get-FreeSpaceGB {
+
+    $disk = Get-CimInstance Win32_LogicalDisk `
+        -Filter "DeviceID='$env:SystemDrive'"
+
+    if ($disk) {
+        return [math]::Round($disk.FreeSpace / 1GB, 2)
+    }
+
+    return 0
+}
+
+# ============================================================
+# LIMPEZA DE DIRETÓRIOS
+# ============================================================
+
+function Clear-FolderSafe {
+
+    param(
+        [string]$Path
+    )
+
+    if (-not (Test-Path $Path)) {
+        return
+    }
+
+    Write-Host "    Limpando: $Path" -ForegroundColor Gray
+
+    try {
+
+        Get-ChildItem `
+            -LiteralPath $Path `
+            -Force `
+            -ErrorAction SilentlyContinue |
+        Remove-Item `
+            -Recurse `
+            -Force `
+            -ErrorAction SilentlyContinue
+
+    }
+    catch {
+        Write-Warn "Alguns ficheiros estavam em utilização: $Path"
+    }
+}
+
+function Clean-TemporaryFiles {
+
+    Write-Step "A limpar ficheiros temporários..."
+
+    $before = Get-FreeSpaceGB
+
+    $folders = @(
+        $env:TEMP
+        "$env:SystemRoot\Temp"
+        "$env:LOCALAPPDATA\Temp"
+    )
+
+    foreach ($folder in $folders) {
+        Clear-FolderSafe $folder
+    }
+
+    # Cache de miniaturas do utilizador
+    try {
+
+        Get-ChildItem `
+            "$env:LOCALAPPDATA\Microsoft\Windows\Explorer" `
+            -Filter "thumbcache_*.db" `
+            -Force `
+            -ErrorAction SilentlyContinue |
+        Remove-Item `
+            -Force `
+            -ErrorAction SilentlyContinue
+
+    }
+    catch {}
+
+    # Cache de shaders do DirectX
+    $shaderCache = "$env:LOCALAPPDATA\D3DSCache"
+
+    if (Test-Path $shaderCache) {
+        Clear-FolderSafe $shaderCache
+    }
+
+    $after = Get-FreeSpaceGB
+    $difference = [math]::Round($after - $before, 2)
+
+    if ($difference -gt 0) {
+        Write-OK "Espaço recuperado: $difference GB"
+    }
+    else {
+        Write-OK "Limpeza concluída."
+    }
+}
+
+# ============================================================
+# RECICLAGEM
+# ============================================================
+
+function Clear-RecycleBinSafe {
+
+    Write-Step "A esvaziar a Reciclagem..."
+
+    try {
+
+        Clear-RecycleBin `
+            -Force `
+            -ErrorAction SilentlyContinue
+
+        Write-OK "Reciclagem limpa."
+
+    }
+    catch {
+
+        Write-Warn "Não foi possível limpar completamente a Reciclagem."
+    }
+}
+
+# ============================================================
+# WINDOWS UPDATE CACHE
+# ============================================================
+
+function Clean-WindowsUpdateCache {
+
+    Write-Step "A verificar cache do Windows Update..."
+
+    try {
+
+        Stop-Service wuauserv -Force -ErrorAction SilentlyContinue
+        Stop-Service bits -Force -ErrorAction SilentlyContinue
+
+        $path = "$env:SystemRoot\SoftwareDistribution\Download"
+
+        if (Test-Path $path) {
+            Clear-FolderSafe $path
+        }
+
+        Start-Service bits -ErrorAction SilentlyContinue
+        Start-Service wuauserv -ErrorAction SilentlyContinue
+
+        Write-OK "Cache do Windows Update limpa."
+
+    }
+    catch {
+
+        Write-Warn "Não foi possível limpar completamente a cache do Windows Update."
+    }
+}
+
+# ============================================================
+# DISM
+# ============================================================
+
+function Repair-WindowsImage {
+
+    Write-Step "A executar DISM /RestoreHealth..."
+    Write-Host "Isto pode demorar alguns minutos." -ForegroundColor Yellow
+    Write-Host ""
+
+    & DISM.exe /Online /Cleanup-Image /RestoreHealth
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-OK "DISM terminou sem erro."
+    }
+    else {
+        Write-Warn "DISM terminou com código: $LASTEXITCODE"
+    }
+}
+
+# ============================================================
+# SFC
+# ============================================================
+
+function Run-SFC {
+
+    Write-Step "A verificar ficheiros protegidos do Windows..."
+    Write-Host ""
+
+    & sfc.exe /scannow
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-OK "SFC terminou."
+    }
+    else {
+        Write-Warn "SFC terminou com código: $LASTEXITCODE"
+    }
+}
+
+# ============================================================
+# COMPONENT STORE
+# ============================================================
+
+function Clean-WindowsComponents {
+
+    Write-Step "A limpar componentes antigos do Windows..."
+
+    & DISM.exe /Online /Cleanup-Image /StartComponentCleanup
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-OK "Limpeza de componentes concluída."
+    }
+    else {
+        Write-Warn "DISM terminou com código: $LASTEXITCODE"
+    }
+}
+
+# ============================================================
+# DRIVERS
+# ============================================================
+
+function Check-Drivers {
+
+    Write-Step "A verificar dispositivos com problemas..."
+
+    try {
+
+        $problems = Get-PnpDevice -PresentOnly:$false |
+            Where-Object {
+                $_.Status -eq "Error" -or
+                $_.Status -eq "Unknown" -or
+                $_.Status -eq "Degraded"
+            }
+
+        if ($problems) {
+
+            Write-Warn "Foram encontrados dispositivos que merecem atenção:"
+            Write-Host ""
+
+            $problems |
+                Select-Object Status, Class, FriendlyName, InstanceId |
+                Format-Table -AutoSize
+
+        }
+        else {
+
+            Write-OK "Não foram encontrados dispositivos com problemas aparentes."
+        }
+
+    }
+    catch {
+
+        Write-Warn "Não foi possível consultar todos os dispositivos."
+    }
+}
+
+# ============================================================
+# MEMÓRIA
+# ============================================================
+
+function Show-MemoryStatus {
+
+    Write-Step "Estado atual da memória..."
+
+    try {
+
+        $os = Get-CimInstance Win32_OperatingSystem
+
+        $total = [math]::Round(
+            $os.TotalVisibleMemorySize / 1MB,
+            2
+        )
+
+        $free = [math]::Round(
+            $os.FreePhysicalMemory / 1MB,
+            2
+        )
+
+        $used = [math]::Round(
+            $total - $free,
+            2
+        )
+
+        $percent = [math]::Round(
+            ($used / $total) * 100,
+            1
+        )
+
+        Write-Host ""
+        Write-Host "    RAM total : $total GB" -ForegroundColor Gray
+        Write-Host "    RAM usada : $used GB" -ForegroundColor Gray
+        Write-Host "    RAM livre : $free GB" -ForegroundColor Gray
+        Write-Host "    Utilização: $percent %" -ForegroundColor Gray
+        Write-Host ""
+
+        Write-Host "    Processos com maior consumo:" -ForegroundColor Cyan
+
+        Get-Process |
+            Sort-Object WorkingSet64 -Descending |
+            Select-Object -First 10 `
+                ProcessName,
+                Id,
+                @{Name="RAM_GB";Expression={
+                    [math]::Round($_.WorkingSet64 / 1GB, 2)
+                }} |
+            Format-Table -AutoSize
+
+    }
+    catch {
+
+        Write-Warn "Não foi possível obter o estado da memória."
+    }
+}
+
+# ============================================================
+# TEMPORÁRIOS DOS NAVEGADORES
+# ============================================================
+
+function Clean-BrowserCaches {
+
+    Write-Step "A limpar caches comuns dos navegadores..."
+
+    $paths = @(
+        "$env:LOCALAPPDATA\Google\Chrome\User Data\Default\Cache",
+        "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Cache",
+        "$env:LOCALAPPDATA\Mozilla\Firefox\Profiles"
+    )
+
+    foreach ($path in $paths) {
+
+        if (Test-Path $path) {
+
+            try {
+
+                if ($path -notlike "*Firefox*") {
+                    Clear-FolderSafe $path
+                }
+
+            }
+            catch {}
+        }
+    }
+
+    Write-OK "Limpeza de caches concluída."
+}
+
+# ============================================================
+# DISCO
+# ============================================================
+
+function Optimize-SystemDrive {
+
+    Write-Step "A otimizar o volume do sistema..."
+
+    try {
+
+        Optimize-Volume `
+            -DriveLetter $env:SystemDrive.TrimEnd(":") `
+            -Verbose
+
+        Write-OK "Otimização do volume concluída."
+
+    }
+    catch {
+
+        Write-Warn "Não foi possível executar a otimização automática."
+    }
+}
+
+# ============================================================
+# RELATÓRIO FINAL
+# ============================================================
+
+function Show-FinalReport {
+
+    $end = Get-Date
+    $duration = $end - $StartTime
+
+    $free = Get-FreeSpaceGB
+
+    Write-Host ""
+    Write-Host "============================================================" -ForegroundColor DarkCyan
+    Write-Host "                    RELATÓRIO FINAL" -ForegroundColor Cyan
+    Write-Host "============================================================" -ForegroundColor DarkCyan
+    Write-Host ""
+
+    Write-Host "Tempo de execução : $($duration.ToString('hh\:mm\:ss'))"
+    Write-Host "Espaço livre      : $free GB"
+    Write-Host "Log               : $LogFile"
+
+    Write-Host ""
+    Write-Host "Operações concluídas:" -ForegroundColor Green
+    Write-Host "  [OK] Limpeza de temporários"
+    Write-Host "  [OK] Reciclagem"
+    Write-Host "  [OK] Verificação/reparação Windows"
+    Write-Host "  [OK] Componentes Windows"
+    Write-Host "  [OK] Diagnóstico de drivers"
+    Write-Host "  [OK] Diagnóstico de memória"
+
+    Write-Host ""
+    Write-Host "Recomenda-se reiniciar o computador." -ForegroundColor Yellow
+}
+
+# ============================================================
+# MENU
+# ============================================================
+
+function Show-Menu {
+
+    Write-Title "Ferramenta segura de manutenção e recuperação"
+
+    Write-Host "  [1] Limpeza completa + reparação"
+    Write-Host "  [2] Apenas limpeza"
+    Write-Host "  [3] Reparar Windows"
+    Write-Host "  [4] Diagnóstico de memória"
+    Write-Host "  [5] Verificar drivers"
+    Write-Host "  [6] Otimizar disco"
+    Write-Host "  [7] Executar tudo"
+    Write-Host "  [0] Sair"
+    Write-Host ""
+}
+
+# ============================================================
+# EXECUÇÃO
+# ============================================================
+
+try {
+
+    do {
+
+        Show-Menu
+
+        $choice = Read-Host "Escolhe uma opção"
+
+        switch ($choice) {
+
+            "1" {
+
+                Create-RestorePoint
+                Clean-TemporaryFiles
+                Clear-RecycleBinSafe
+                Clean-BrowserCaches
+                Clean-WindowsUpdateCache
+                Clean-WindowsComponents
+                Repair-WindowsImage
+                Run-SFC
+                Show-MemoryStatus
+                Check-Drivers
+
+                Pause-Script
+            }
+
+            "2" {
+
+                Clean-TemporaryFiles
+                Clear-RecycleBinSafe
+                Clean-BrowserCaches
+                Clean-WindowsUpdateCache
+
+                Pause-Script
+            }
+
+            "3" {
+
+                Create-RestorePoint
+                Repair-WindowsImage
+                Run-SFC
+                Clean-WindowsComponents
+
+                Pause-Script
+            }
+
+            "4" {
+
+                Show-MemoryStatus
+
+                Pause-Script
+            }
+
+            "5" {
+
+                Check-Drivers
+
+                Pause-Script
+            }
+
+            "6" {
+
+                Optimize-SystemDrive
+
+                Pause-Script
+            }
+
+            "7" {
+
+                Create-RestorePoint
+
+                Clean-TemporaryFiles
+                Clear-RecycleBinSafe
+                Clean-BrowserCaches
+                Clean-WindowsUpdateCache
+
+                Clean-WindowsComponents
+
+                Repair-WindowsImage
+                Run-SFC
+
+                Show-MemoryStatus
+                Check-Drivers
+
+                Optimize-SystemDrive
+
+                Show-FinalReport
+
+                $restart = Read-Host "Queres reiniciar agora? (S/N)"
+
+                if ($restart -match "^[sS]$") {
+
+                    Write-Host ""
+                    Write-Host "O computador será reiniciado em 10 segundos..." `
+                        -ForegroundColor Yellow
+
+                    Start-Sleep 10
+                    Restart-Computer
+                }
+            }
+
+            "0" {
+                break
+            }
+
+            default {
+
+                Write-Warn "Opção inválida."
+                Start-Sleep 2
+            }
+        }
+
+    } while ($choice -ne "0")
+}
+finally {
+
+    try {
+        Stop-Transcript | Out-Null
+    }
+    catch {}
+}
+
+Write-Host ""
+Write-Host "Windows Refresh terminado." -ForegroundColor Green

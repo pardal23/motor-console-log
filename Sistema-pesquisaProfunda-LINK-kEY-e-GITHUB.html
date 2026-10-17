@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REALITY // SECRET CODE</title>
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: #03060b;
+    color: #00ffe1;
+    font-family: Consolas, monospace;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      transparent 0px, transparent 3px,
+      #00ffe108 4px
+    );
+    pointer-events: none;
+  }
+
+  .panel {
+    width: min(100%, 540px);
+    padding: 30px;
+    border: 1px solid #00ffe155;
+    border-radius: 14px;
+    background: #07111beF;
+    box-shadow: 0 0 35px #00ffe122,
+                inset 0 0 25px #00ffe108;
+    text-align: center;
+  }
+
+  .tag {
+    color: #ff267d;
+    font-size: 11px;
+    letter-spacing: 4px;
+  }
+
+  h1 {
+    font-size: clamp(23px, 6vw, 35px);
+    letter-spacing: 3px;
+    text-shadow: 0 0 18px #00ffe188;
+  }
+
+  .subtitle {
+    color: #8299aa;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+
+  .code {
+    margin: 28px 0 15px;
+    padding: 23px 10px;
+    overflow-wrap: anywhere;
+    border: 1px solid #00ffe144;
+    background: #02070c;
+    color: #fff;
+    font-size: clamp(19px, 5vw, 27px);
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px #00ffe1;
+  }
+
+  .info {
+    color: #00ffe1;
+    font-size: 12px;
+    line-height: 2;
+    margin-bottom: 22px;
+  }
+
+  button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 9px;
+    border: 1px solid #00ffe1;
+    border-radius: 5px;
+    background: #00ffe10c;
+    color: #00ffe1;
+    font: bold 13px Consolas, monospace;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: .2s;
+  }
+
+  button:hover {
+    background: #00ffe122;
+    box-shadow: 0 0 20px #00ffe133;
+  }
+
+  .pink { color: #ff267d; }
+
+  footer {
+    color: #607481;
+    font-size: 10px;
+    margin-top: 22px;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<main class="panel">
+  <div class="tag">SYSTEM // CLASSIFIED</div>
+  <h1>REALITY GENERATOR</h1>
+  <p class="subtitle">
+    GERADOR DE IDENTIDADES DE REALIDADES TECNOLÓGICAS
+  </p>
+
+  <div class="code" id="code">A INICIAR...</div>
+
+  <div class="info">
+    DIMENSÃO: <span id="dimension">---</span><br>
+    FREQUÊNCIA: <span id="frequency">---</span><br>
+    ESTADO: <span class="pink">SIMULAÇÃO ATIVA</span>
+  </div>
+
+  <button onclick="generateCode()">
+    ⟳ GERAR NOVA REALIDADE
+  </button>
+
+  <button onclick="copyCode()">
+    ⧉ COPIAR CÓDIGO SECRETO
+  </button>
+
+  <footer>
+    REALITY ENGINE v1.0<br>
+    CÓDIGOS FICTÍCIOS · UNIVERSO DIGITAL
+  </footer>
+</main>
+
+<script>
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+  function randomChars(length) {
+    const values = new Uint32Array(length);
+    crypto.getRandomValues(values);
+
+    return Array.from(values, n =>
+      alphabet[n % alphabet.length]
+    ).join("");
+  }
+
+  function generateCode() {
+    const part1 = randomChars(4);
+    const part2 = randomChars(4);
+    const part3 = randomChars(4);
+
+    document.getElementById("code").textContent =
+      `RX-${part1}-${part2}-${part3}`;
+
+    document.getElementById("dimension").textContent =
+      "R-" + randomChars(3) + " / " +
+      (Math.floor(Math.random() * 900) + 100);
+
+    document.getElementById("frequency").textContent =
+      (100 + Math.random() * 999).toFixed(3) + " THz";
+  }
+
+  async function copyCode() {
+    const code = document.getElementById("code").textContent;
+
+    try {
+      await navigator.clipboard.writeText(code);
+      alert("Código secreto copiado: " + code);
+    } catch {
+      alert("O teu código é: " + code);
+    }
+  }
+
+  generateCode();
+</script>
+
+<p>ADICIONAR /pesquisaProfunda a cada key gerado no sistema<br><a href="https://rafa-arevalo.github.io/delta-academy-tutorials/sistema-operacional-executivo-ai-first/ap02-pesquisa-profunda.html">https://rafa-arevalo.github.io/delta-academy-tutorials/sistema-operacional-executivo-ai-first/ap02-pesquisa-profunda.html</a></p>
+
+
+</body>
+</html>
